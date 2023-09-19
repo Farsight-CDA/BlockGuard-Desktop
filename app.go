@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -72,9 +73,9 @@ func (a *App) MTLSFetch(method string, path string, body string, csr string, pri
 }
 
 func (a *App) SoftEtherStatus() string {
-	res, _ := cliExec(1000, "vpncmd", "localhost", "/CLIENT", "/CMD NicGet", "VPN69");
+	res, _ := cliExec(1000, "vpncmd", "localhost /CLIENT /CMD VersionGet");
 
-	if (strings.Contains(res, "Error occurred. (Error code: 1)")) {
+	if (strings.Contains(res, "Error occurred")) {
 		return "Offline"
 	}
 
@@ -82,10 +83,15 @@ func (a *App) SoftEtherStatus() string {
 }
 
 func (a *App) ConnectVPN(host string, username string, password string) {
-	cliExec(1000, "vpncmd", "localhost", "/CLIENT", "/CMD NicGet", "VPN69");
-	cliExec(1000, "vpncmd", "localhost", "/CLIENT", "/CMD AccountCreate", "blockguard", "/SERVER:localhost:433 /HUB:DEFAULT /USERNAME:admin /NICNAME:VPN69")
-
-	cliExec(1000, "vpncmd", "localhost", "/CLIENT", "/CMD AccountPasswordSet", "blockguard", "/TYPE:\"standard\"", "/PASSWORD:" + password)
-	cliExec(1000, "vpncmd", "localhost", "/CLIENT", "/CMD AccountUsernameSet", "blockguard", "/USERNAME", username)
-	cliExec(1000, "vpncmd", "localhost", "/CLIENT", "/CMD AccountSet", "blockguard", "/HUB:DEFAULT", "/SERVER " + host)
+	res, err := cliExec(1000, "vpncmd", "localhost /CLIENT /CMD NicCreate VPN69");
+	fmt.Print(res, err);
+	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountCreate blockguard /SERVER:localhost:433 /HUB:DEFAULT /USERNAME:admin /NICNAME:VPN69")
+	fmt.Print(res, err);
+	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountPasswordSet blockguard /TYPE:\"standard\" /PASSWORD:\"" + password + "\"")
+	fmt.Print(res, err);
+	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountUsernameSet blockguard /USERNAME:" + username)
+	fmt.Print(res, err);
+	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountSet blockguard /HUB:DEFAULT /SERVER:\"" + host + "\"")
+	fmt.Print(res, err);
+	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountConnect blockguard")
 }
