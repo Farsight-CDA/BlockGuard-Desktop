@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -84,14 +85,101 @@ func (a *App) SoftEtherStatus() string {
 
 func (a *App) ConnectVPN(host string, username string, password string) {
 	res, err := cliExec(1000, "vpncmd", "localhost /CLIENT /CMD NicCreate VPN69");
-	fmt.Print(res, err);
+	fmt.Print(res, err)
 	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountCreate blockguard /SERVER:localhost:433 /HUB:DEFAULT /USERNAME:admin /NICNAME:VPN69")
-	fmt.Print(res, err);
+	fmt.Print(res, err)
 	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountPasswordSet blockguard /TYPE:\"standard\" /PASSWORD:\"" + password + "\"")
-	fmt.Print(res, err);
+	fmt.Print(res, err)
 	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountUsernameSet blockguard /USERNAME:" + username)
-	fmt.Print(res, err);
+	fmt.Print(res, err)
 	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountSet blockguard /HUB:DEFAULT /SERVER:\"" + host + "\"")
-	fmt.Print(res, err);
+	fmt.Print(res, err)
 	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountConnect blockguard")
+	fmt.Print(res, err)
+}
+
+func (a *App) DisconnectVPN() {
+	res, err := cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountDisconnect blockguard")
+	fmt.Print(res, err)
+}
+
+type Property struct {
+	key string
+	value string
+}	
+
+type VPNConnectionStatus struct {
+	status string
+	incomingBytes int
+	outgoingBytes int
+}
+
+func (a *App) GetConnectionStatus() VPNConnectionStatus {
+	res, err := cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountStatusGet blockguard")
+	fmt.Print(res, err)
+	
+	if (strings.Contains(res, "Error code: 37")) {
+		return VPNConnectionStatus{
+			status: "Offline",
+			incomingBytes: 0,
+			outgoingBytes: 0,
+		}
+	}
+
+	lines := strings.Split(res, "\n")
+	properties := []Property{}
+
+	for _, line := range lines {
+		parts := strings.Split(line, "|")
+
+		if (len(parts) != 2) {
+			continue
+		}
+
+		key := strings.Trim(parts[0], "")
+		value := strings.Trim(parts[1], "")
+
+		if (key == "Item") {
+			continue
+		}
+
+		properties = append(properties, Property{
+			key: key,
+			value: value,
+		})
+	}
+
+	status, err := getProperty(properties, "Session Status")
+	outgoing_raw, err := getProperty(properties, "Outgoing Data Size");
+	incoming_raw, err := getProperty(properties, "Incoming Data Size")
+
+	outgoing, err := strconv.ParseInt(strings.ReplaceAll(strings.Split(outgoing_raw, " ")[0], ",", ""), 10, 32)
+	incoming, err := strconv.ParseInt(strings.ReplaceAll(strings.Split(incoming_raw, " ")[0], ",", ""), 10, 32)
+
+	return VPNConnectionStatus{
+		status: status,
+		outgoingBytes: int(outgoing),
+		incomingBytes: int(incoming),
+	}
+}
+
+func converStatus(status string) string {
+	if strings.Contains(status, "not connected") {
+		return "Failed"
+	}
+	if (strings.Contains(status, "Connection to VPN Server Started") || strings.Contains(status, "Retrying")) {
+		return "Connecting"
+	}
+
+	return "Failed"
+}
+
+func getProperty(properties []Property, key string) (string, error) {
+	for _, prop := range properties {
+		if (prop.key == key){
+			return prop.value, nil;
+		}
+	}
+
+	return "", fmt.Errorf("Key not found")
 }
