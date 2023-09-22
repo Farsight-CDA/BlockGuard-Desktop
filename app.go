@@ -29,55 +29,62 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-func (a *App) MTLSFetch(method string, path string, body string, csr string, privateKey string) string {
+type MTLSFetchResponse struct {
+	Success    bool   `json:"success"`
+	StatusCode int    `json:"statusCode"`
+	Body       string `json:"body"`
+}
+
+func (a *App) MTLSFetch(method string, path string, body string, csr string, privateKey string) MTLSFetchResponse {
 	runtime.LogDebug(a.ctx, "MTLSFetch - "+path)
-	cert, err := tls.X509KeyPair([]byte(csr), []byte(privateKey))
-
-	if err != nil {
-		runtime.LogError(a.ctx, err.Error())
-		return "Fail 1"
-	}
-
-	certs := []tls.Certificate{cert}
-
+	cert, _ := tls.X509KeyPair([]byte(csr), []byte(privateKey))
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{Certificates: certs,
+		TLSClientConfig: &tls.Config{Certificates: []tls.Certificate{cert},
 			InsecureSkipVerify: true},
 	}
 
 	client := &http.Client{Transport: tr}
 
-	if err != nil {
-		runtime.LogError(a.ctx, err.Error())
-		return "Fail 2"
-	}
-
-	req, err := http.NewRequest(method, path, bytes.NewReader([]byte(body)))
-
-	if err != nil {
-		runtime.LogError(a.ctx, err.Error())
-		return "Fail 3"
-	}
-
+	req, _ := http.NewRequest(method, path, bytes.NewReader([]byte(body)))
 	res, err := client.Do(req)
 
-	if err != nil {
+	if err == nil {
+		defer res.Body.Close()
+	} else {
 		runtime.LogError(a.ctx, err.Error())
-		return "Fail 4"
+	}
+
+	if err != nil {
+		return MTLSFetchResponse{
+			Success:    false,
+			StatusCode: -1,
+			Body:       "",
+		}
+	}
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		return MTLSFetchResponse{
+			Success:    false,
+			StatusCode: res.StatusCode,
+			Body:       "",
+		}
 	}
 
 	result, err := io.ReadAll(res.Body)
 
 	if err != nil {
 		runtime.LogError(a.ctx, err.Error())
-		return "Fail 5"
+		return MTLSFetchResponse{
+			Success:    false,
+			StatusCode: res.StatusCode,
+			Body:       "",
+		}
 	}
 
-	if len(result) == 0 {
-		return res.Status
+	return MTLSFetchResponse{
+		Success:    true,
+		StatusCode: res.StatusCode,
+		Body:       string(result[:]),
 	}
-
-	return string(result[:])
 }
 
 func (a *App) SoftEtherStatus() string {
@@ -91,23 +98,16 @@ func (a *App) SoftEtherStatus() string {
 }
 
 func (a *App) ConnectVPN(host string, username string, password string) {
-	res, err := cliExec(1000, "vpncmd", "localhost /CLIENT /CMD NicCreate VPN69")
-	fmt.Print(res, err)
-	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountCreate blockguard /SERVER:localhost:433 /HUB:DEFAULT /USERNAME:admin /NICNAME:VPN69")
-	fmt.Print(res, err)
-	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountPasswordSet blockguard /TYPE:\"standard\" /PASSWORD:\""+password+"\"")
-	fmt.Print(res, err)
-	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountUsernameSet blockguard /USERNAME:"+username)
-	fmt.Print(res, err)
-	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountSet blockguard /HUB:DEFAULT /SERVER:\""+host+"\"")
-	fmt.Print(res, err)
-	res, err = cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountConnect blockguard")
-	fmt.Print(res, err)
+	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD NicCreate VPN69")
+	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountCreate blockguard /SERVER:localhost:433 /HUB:DEFAULT /USERNAME:admin /NICNAME:VPN69")
+	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountPasswordSet blockguard /TYPE:\"standard\" /PASSWORD:\""+password+"\"")
+	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountUsernameSet blockguard /USERNAME:"+username)
+	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountSet blockguard /HUB:DEFAULT /SERVER:\""+host+"\"")
+	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountConnect blockguard")
 }
 
 func (a *App) DisconnectVPN() {
-	res, err := cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountDisconnect blockguard")
-	fmt.Print(res, err)
+	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountDisconnect blockguard")
 }
 
 type Property struct {
@@ -170,10 +170,10 @@ func (a *App) GetConnectionStatus() VPNConnectionStatus {
 }
 
 func convertStatus(status string) string {
-	if strings.Contains(status, "not connected") {
-		return "Failed"
-	}
-	if strings.Contains(status, "Connection to VPN Server Started") || strings.Contains(status, "Retrying") {
+	if strings.Contains(status, "Connection to VPN Server Started") ||
+		strings.Contains(status, "Retrying") ||
+		strings.Contains(status, "Authenticating User") ||
+		strings.Contains(status, "Negotiating") {
 		return "Connecting"
 	}
 	if strings.Contains(status, "Connection Completed (Session Established)") {
