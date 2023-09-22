@@ -17,9 +17,11 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "BlockGuard",
-		Width:  1024,
-		Height: 768,
+		Title:     "BlockGuard",
+		Width:     1024,
+		Height:    768,
+		MinHeight: 600,
+		MinWidth:  400,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
