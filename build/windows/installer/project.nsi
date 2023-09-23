@@ -52,9 +52,41 @@ Function .onInit
    !insertmacro wails.checkArchitecture
 FunctionEnd
 
-Function finishpageaction
-    CreateShortcut "$desktop\foo.lnk" "$instdir\foo.exe"
-FunctionEnd
+Section -Prerequisites
+; Check to see if already installed
+  ClearErrors
+
+  ${If} ${RunningX64}
+    SetRegView 64
+  ${EndIf}
+
+  ReadRegStr $R0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\softether_sevpnclient" "DisplayVersion"
+
+  IfErrors 0 done
+
+  ReadRegStr $R0 HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\softether_sevpnclient" "DisplayVersion"
+  ReadRegStr $R1 HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\softether_sevpnclient" "UninstallString"
+  DetailPrint $R0
+  IfFileExists $R1 done install_softether
+
+  install_softether:
+    SetOutPath $INSTDIR\Prerequisites
+    MessageBox MB_OK "Your system does not appear to have vpncmd installed.$\n$\nPress OK to install it."
+
+    ClearErrors
+    File "..\..\common\softether\softether-vpnclient-v4.43.exe"
+    ExecWait "$INSTDIR\Prerequisites\softether-vpnclient-v4.43.exe"
+
+    ifErrors error_installing_softether done
+    Delete "$INSTDIR\Prerequisites\softether-vpnclient-v4.43.exe"
+
+  error_installing_softether:
+    ABORT
+
+  done:
+    SetRegView LastUsed
+    Delete "$INSTDIR\Prerequisites\softether-vpnclient-v4.43.exe"
+SectionEnd
 
 Section
     !insertmacro wails.setShellContext
@@ -69,6 +101,10 @@ Section
 
     !insertmacro wails.writeUninstaller
 SectionEnd
+
+Function finishpageaction
+    CreateShortcut "$desktop\foo.lnk" "$instdir\foo.exe"
+FunctionEnd
 
 Section "uninstall" 
     !insertmacro wails.setShellContext
