@@ -27,7 +27,20 @@ ManifestDPIAware true
 !define MUI_FINISHPAGE_SHOWREADME ""
 !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "Create Desktop Shortcut"
-!define MUI_FINISHPAGE_SHOWREADME_FUNCTION finishpageaction
+!define MUI_FINISHPAGE_SHOWREADME_FUNCTION "Create Desktop Shortcut"
+
+Function "Create Desktop Shortcut"
+    CreateShortcut "$desktop\Blockguard.lnk" "$INSTDIR\blockguard.exe"
+FunctionEnd
+
+!define MUI_FINISHPAGE_RUN
+!define MUI_FINISHPAGE_RUN_CHECKED
+!define MUI_FINISHPAGE_RUN_TEXT "Run Blockguard"
+!define MUI_FINISHPAGE_RUN_FUNCTION "Run Blockguard"
+
+Function "Run Blockguard"
+    Exec "$INSTDIR\blockguard.exe"
+FunctionEnd
 
 !insertmacro MUI_PAGE_WELCOME # Welcome to the installer page.
 # !insertmacro MUI_PAGE_LICENSE "resources\eula.txt" # Adds a EULA page to the installer
@@ -101,10 +114,6 @@ Section
 
     !insertmacro wails.writeUninstaller
 SectionEnd
-
-Function finishpageaction
-    CreateShortcut "$desktop\foo.lnk" "$instdir\foo.exe"
-FunctionEnd
 
 Section "uninstall" 
     !insertmacro wails.setShellContext
