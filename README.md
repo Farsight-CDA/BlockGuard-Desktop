@@ -1,6 +1,6 @@
 # BlockBuard-Desktop
 
-This repository is native Desktopa application using wails.
+This repository is native Desktop application using wails.
 The frontend implementation hosted through wails can be found at [`BlockGuard-UI`](https://github.com/Farsight-CDA/BlockGuard-UI) 
 
 ## Building
