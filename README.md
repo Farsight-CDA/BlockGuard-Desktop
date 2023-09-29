@@ -1,6 +1,7 @@
 # BlockBuard-Desktop
 
-this reposetory is the Desctop implementation of the project  [`BlockGuard-UI`](https://github.com/Farsight-CDA/BlockGuard-UI) 
+This repository is native Desktopa application using wails.
+The frontend implementation hosted through wails can be found at [`BlockGuard-UI`](https://github.com/Farsight-CDA/BlockGuard-UI) 
 
 ## Building
 
@@ -15,15 +16,25 @@ to update the submodule
 ```bash
 cd frondend
 npm i
-
-to install the packages of the frondend
-
-now you need to past the folowing into
-```bash
-frontend\src\lib\native-api\native-api.ts
 ```
-sry for the workaround we will try to fix this in the future
+to install the packages of the frontend
 
+Now you will need to manually connect the web project to the native APIs implemented in go.
+To do that you will have to paste some code into `frontend\src\lib\native-api\native-api.ts`
+
+Its a messy workaround, but hey: it works!
+
+```ts
+import {
+	MTLSFetch,
+	SoftEtherStatus,
+	ConnectVPN,
+	DisconnectVPN,
+	GetConnectionStatus
+} from '$lib/wailsjs/go/main/App';
+```
+Exising file here
+[...]
 ```ts
 setNativeAPIInitializer(() => {
     if (!Object.hasOwn(window, 'go')) {
@@ -66,28 +77,27 @@ setNativeAPIInitializer(() => {
 });
 ```
 
-now finialy we can build the app run:
+now finally we can build the app
 
 ```bash
 wails build
 ```
+
 You can preview the production build with `wails dev`.
 
 ## Dependencies
 
-this project depends on a modifide version of [`akashjs`](https://github.com/akash-network/akashjs).
-
-ouer version is [`akashjs`](https://github.com/Farsight-CDA/akashjs).
+this project depends on a modified version of [`akashjs`](https://github.com/akash-network/akashjs).
+Our version is [`akashjs`](https://github.com/Farsight-CDA/akashjs).
 
 ## Roadmap
 
 Operating System Support
-The entire app has been built with maximum possible operating system in mind. 
+The entire app has been built with maximum possible operating system support in mind. 
 All it takes to onboard another operating system is to implement a handful of native platform APIs.
 We are planning to support:
-Windows (done)
-Linux (more manual installation process)
-MacOS
-Android
-IOS
-look related [`Reposetories`](https://github.com/Farsight-CDA/Blockguard) for mor infos.
+- Windows (done)
+- Linux (more manual installation process)
+- MacOS
+- Android
+- IOS
