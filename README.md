@@ -36,7 +36,7 @@ import {
 Exising file here
 [...]
 ```ts
-setNativeAPIInitializer(() => {
+setNativeAPIInitializer(async () => {
     if (!Object.hasOwn(window, 'go')) {
         window.location.href = '/';
         throw Error('Missing window.go');
@@ -72,7 +72,10 @@ setNativeAPIInitializer(() => {
             await ConnectVPN(host, username, password),
         disconnectVPN: async () => await DisconnectVPN(),
         getConnectionStatus: async () =>
-            (await GetConnectionStatus()) as VPNConnectionStatus
+            (await GetConnectionStatus()) as VPNConnectionStatus,
+			copyToClipboard: async (string) =>
+			Promise.resolve(await window.navigator.clipboard.writeText(string)),
+		pasteFromClipboard: () => Promise.resolve()
     } satisfies NativeAPIs);
 });
 ```
