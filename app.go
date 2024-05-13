@@ -100,9 +100,9 @@ func (a *App) SoftEtherStatus() string {
 func (a *App) ConnectVPN(host string, username string, password string) {
 	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD NicCreate VPN69")
 	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountCreate blockguard /SERVER:localhost:433 /HUB:DEFAULT /USERNAME:admin /NICNAME:VPN69")
-	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountPasswordSet blockguard /TYPE:\"standard\" /PASSWORD:\""+password+"\"")
-	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountUsernameSet blockguard /USERNAME:"+username)
 	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountSet blockguard /HUB:DEFAULT /SERVER:\""+host+"\"")
+	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountUsernameSet blockguard /USERNAME:"+username)
+	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountPasswordSet blockguard /TYPE:\"standard\" /PASSWORD:\""+password+"\"")
 	cliExec(1000, "vpncmd", "localhost /CLIENT /CMD AccountConnect blockguard")
 }
 
