@@ -61,13 +61,6 @@ func (a *App) MTLSFetch(method string, path string, body string, csr string, pri
 			Body:       "",
 		}
 	}
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return MTLSFetchResponse{
-			Success:    false,
-			StatusCode: res.StatusCode,
-			Body:       "",
-		}
-	}
 
 	result, err := io.ReadAll(res.Body)
 
@@ -77,6 +70,14 @@ func (a *App) MTLSFetch(method string, path string, body string, csr string, pri
 			Success:    false,
 			StatusCode: res.StatusCode,
 			Body:       "",
+		}
+	}
+
+	if res.StatusCode < 200 || res.StatusCode > 299 {
+		return MTLSFetchResponse{
+			Success:    false,
+			StatusCode: res.StatusCode,
+			Body:       string(result[:]),
 		}
 	}
 
